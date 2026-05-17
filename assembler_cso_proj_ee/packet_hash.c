@@ -195,7 +195,7 @@ void write_memin(const char* filename) {
 }
 
 int main(int argc, char* argv[]) {
-    // Command line arguments: asm.exe program.asm memin.txt
+    // Command line arguments for test: asm.exe program.asm memin.txt
     if (argc < 3) {
         printf("Usage: asm.exe <input.asm> <output.txt>\n");
         return 1;
