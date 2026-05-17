@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="assembler_cso_proj_ee/assembler_cso_proj_ee.vcxproj" />
+</Solution>
