@@ -141,6 +141,14 @@
   <ItemGroup>
     <ClCompile Include="packet_hash.c" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="bin_log.txt" />
+    <Text Include="hex_log.txt" />
+    <Text Include="memin.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test_fib.asm" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
