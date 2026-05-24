@@ -15,7 +15,7 @@
 #   $t0 = current sector (0..7)
 #   $t1 = inner loop index i (0..127)
 #   $t2 = temp / address computation
-#   $t3 = buffer[i]
+#   $a3 = buffer[i]
 #   $s0 = buffer base address (0x200, permanent)
 #   $s1 = accum base address (0x280, permanent)
 #   $a0 = 128 (inner loop bound)
@@ -47,10 +47,10 @@ add $t1, $zero, $zero, 0, 0            # i = 0
 
 accum_loop:
 add $t2, $s0, $t1, 0, 0                # $t2 = buffer base + i
-lw $t3, $t2, $zero, 0, 0               # $t3 = buffer[i]
+lw $a3, $t2, $zero, 0, 0               # $a3 = buffer[i]
 add $t2, $s1, $t1, 0, 0                # $t2 = accum base + i
 lw $a2, $t2, $zero, 0, 0               # $a2 = accum[i]
-add $a2, $a2, $t3, 0, 0                # $a2 += buffer[i]
+add $a2, $a2, $a3, 0, 0                # $a2 += buffer[i]
 sw $a2, $t2, $zero, 0, 0               # accum[i] = $a2  ($t2 still holds accum base + i)
 add $t1, $t1, $imm1, 1, 0              # i++
 blt $imm1, $t1, $a0, accum_loop, 0    # if i < 128, continue
