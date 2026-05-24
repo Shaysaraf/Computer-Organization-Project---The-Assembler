@@ -93,6 +93,9 @@ void pass_one(const char* filename) {
         char* comment = strchr(line, '#');
         if (comment) *comment = '\0';
 
+        // Check BEFORE strtok modifies line
+        int uses_imm2 = (strstr(line, "$imm2") || strstr(line, "$IMM2")) ? 1 : 0;
+
         char* token = strtok(line, " \t\n,");
         if (!token) continue;
 
@@ -102,19 +105,14 @@ void pass_one(const char* filename) {
             strcpy(label_table[label_count].name, token);
             label_table[label_count].address = pc;
             label_count++;
-            token = strtok(NULL, " \t\n,"); // Look for opcode after label
+            token = strtok(NULL, " \t\n,");
             if (!token) continue;
         }
 
         // Handle Directives
-        if (token[0] == '.') continue; // Pass 1 ignores data directives
+        if (token[0] == '.') continue;
 
-        // Handle Instructions
-        int uses_imm2 = 0;
-        char* temp_line = line + (token - line) + strlen(token) + 1;
-        // Search the rest of the line for $imm2
-        if (strstr(line, "$imm2") || strstr(line, "$IMM2")) uses_imm2 = 1;
-
+        // Advance PC by 1 or 2
         pc += (uses_imm2 ? 2 : 1);
     }
     fclose(f);
