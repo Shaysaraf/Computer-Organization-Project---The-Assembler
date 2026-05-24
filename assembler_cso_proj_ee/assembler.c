@@ -208,3 +208,4 @@ int main(int argc, char* argv[]) {
     printf("Assembly complete. Labels found: %d. Memory lines: %d\n", label_count, max_pc_reached);
     return 0;
 }
+}
