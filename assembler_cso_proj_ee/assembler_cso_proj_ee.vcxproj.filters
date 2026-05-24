@@ -19,4 +19,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="bin_log.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="hex_log.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="memin.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test_fib.asm">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>
