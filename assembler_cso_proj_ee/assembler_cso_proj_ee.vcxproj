@@ -139,7 +139,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="packet_hash.c" />
+    <ClCompile Include="assembler.c" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="bin_log.txt" />
