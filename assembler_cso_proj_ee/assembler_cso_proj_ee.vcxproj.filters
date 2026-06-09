@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="packet_hash.c">
+    <ClCompile Include="assembler.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
