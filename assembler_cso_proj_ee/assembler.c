@@ -23,7 +23,7 @@ typedef struct {
 // --- Global Tables ---
 Label label_table[MAX_LABELS];
 int label_count = 0;
-uint32_t memory[MAX_MEM] = { 0 }; // Initialized to zero as per specs
+uint32_t memory[MAX_MEM] = { 0 }; // Initialized to zero as per specs [cite: 184, 257]
 int max_pc_reached = 0;
 
 Opcode OPCODE_TABLE[] = {
@@ -36,13 +36,13 @@ Opcode OPCODE_TABLE[] = {
 // --- Helper: Clean and Tokenize ---
 char* clean_token(char* token) {
     if (!token) return NULL;
-    // Remove trailing commas or whitespace
+    // Remove trailing commas, carriage returns, or whitespace
     size_t len = strlen(token);
-    while (len > 0 && (token[len - 1] == ',' || isspace(token[len - 1]))) {
+    while (len > 0 && (token[len - 1] == ',' || token[len - 1] == '\r' || isspace((unsigned char)token[len - 1]))) {
         token[--len] = '\0';
     }
     // Remove leading whitespace
-    while (*token && isspace(*token)) token++;
+    while (*token && isspace((unsigned char)*token)) token++;
     return token;
 }
 
@@ -50,24 +50,25 @@ char* clean_token(char* token) {
 int parse_reg(char* str) {
     str = clean_token(str);
     if (!str) return 0;
-    if (_stricmp(str, "$zero") == 0) return 0;
-    if (_stricmp(str, "$imm1") == 0) return 1;
-    if (_stricmp(str, "$imm2") == 0) return 2;
-    if (_stricmp(str, "$v0") == 0) return 3;
-    if (_stricmp(str, "$a0") == 0) return 4;
-    if (_stricmp(str, "$a1") == 0) return 5;
-    if (_stricmp(str, "$a2") == 0) return 6;
-    if (_stricmp(str, "$a3") == 0) return 7;
-    if (_stricmp(str, "$t0") == 0) return 8;
-    if (_stricmp(str, "$t1") == 0) return 9;
-    if (_stricmp(str, "$t2") == 0) return 10;
-    if (_stricmp(str, "$s0") == 0) return 11;
-    if (_stricmp(str, "$s1") == 0) return 12;
-    if (_stricmp(str, "$gp") == 0) return 13;
-    if (_stricmp(str, "$sp") == 0) return 14;
-    if (_stricmp(str, "$ra") == 0) return 15;
+    if (_stricmp(str, "$zero") == 0) return 0;  // [cite: 178]
+    if (_stricmp(str, "$imm1") == 0) return 1;  // [cite: 178]
+    if (_stricmp(str, "$imm2") == 0) return 2;  // [cite: 178]
+    if (_stricmp(str, "$v0") == 0) return 3;    // [cite: 178]
+    if (_stricmp(str, "$a0") == 0) return 4;    // [cite: 179]
+    if (_stricmp(str, "$a1") == 0) return 5;    // [cite: 179]
+    if (_stricmp(str, "$a2") == 0) return 6;    // [cite: 179]
+    if (_stricmp(str, "$a3") == 0) return 7;    // [cite: 179]
+    if (_stricmp(str, "$t0") == 0) return 8;    // [cite: 179]
+    if (_stricmp(str, "$t1") == 0) return 9;    // [cite: 179]
+    if (_stricmp(str, "$t2") == 0) return 10;   // [cite: 179]
+    if (_stricmp(str, "$s0") == 0) return 11;   // [cite: 179]
+    if (_stricmp(str, "$s1") == 0) return 12;   // [cite: 179]
+    if (_stricmp(str, "$gp") == 0) return 13;   // [cite: 179]
+    if (_stricmp(str, "$sp") == 0) return 14;   // [cite: 179]
+    if (_stricmp(str, "$ra") == 0) return 15;   // [cite: 179]
+    
     // Handle numeric registers like $14 or 14
-    while (*str && !isdigit(*str) && *str != '-') str++;
+    while (*str && !isdigit((unsigned char)*str) && *str != '-') str++;
     return atoi(str);
 }
 
@@ -75,74 +76,101 @@ int parse_reg(char* str) {
 int resolve_val(char* str) {
     str = clean_token(str);
     if (!str) return 0;
-    // Check if it's a Label
+    // Check if it's a Label [cite: 281]
     for (int i = 0; i < label_count; i++) {
         if (strcmp(str, label_table[i].name) == 0) return label_table[i].address;
     }
-    // Handle Hex (0x) or Decimal
+    // Handle Hex (0x) or Decimal [cite: 278, 279]
     return (int)strtol(str, NULL, 0);
 }
 
 // --- PASS 1: Calculate Addresses and Map Labels ---
-void pass_one(const char* filename) {
+int pass_one(const char* filename) {
     FILE* f = fopen(filename, "r");
+    if (!f) {
+        printf("ERROR: Pass 1 failed. Input file '%s' could not be opened.\n", filename);
+        return 0;
+    }
     char line[MAX_LINE];
     int pc = 0;
 
     while (fgets(line, sizeof(line), f)) {
-        char* comment = strchr(line, '#');
+        char* comment = strchr(line, '#'); // [cite: 278]
         if (comment) *comment = '\0';
 
-        // Check BEFORE strtok modifies line
+        // Check for imm2 usage AFTER comments are stripped [cite: 186]
         int uses_imm2 = (strstr(line, "$imm2") || strstr(line, "$IMM2")) ? 1 : 0;
 
-        char* token = strtok(line, " \t\n,");
+        char* token = strtok(line, " \t\n\r,");
         if (!token) continue;
 
-        // Check for Label definition (ends with :)
-        if (token[strlen(token) - 1] == ':') {
-            token[strlen(token) - 1] = '\0';
-            strcpy(label_table[label_count].name, token);
-            label_table[label_count].address = pc;
-            label_count++;
-            token = strtok(NULL, " \t\n,");
-            if (!token) continue;
+        // Check for Label definition safely using strchr [cite: 281]
+        char* colon = strchr(token, ':');
+        if (colon != NULL) {
+            *colon = '\0'; // Chop off the colon character
+            token = clean_token(token);
+            if (token && strlen(token) > 0) {
+                strcpy(label_table[label_count].name, token);
+                label_table[label_count].address = pc;
+                label_count++;
+            }
+            token = strtok(NULL, " \t\n\r,");
+            if (!token) continue; // Label isolated on its own line
         }
 
-        // Handle Directives
+        // Handle Directives (Directives do not advance runtime code execution PC layout) [cite: 287]
         if (token[0] == '.') continue;
 
-        // Advance PC by 1 or 2
+        // Advance PC by 1 or 2 slots [cite: 188]
         pc += (uses_imm2 ? 2 : 1);
     }
     fclose(f);
+    return 1;
 }
 
 // --- PASS 2: Assemble to Memory ---
-void pass_two(const char* filename) {
+int pass_two(const char* filename) {
     FILE* f = fopen(filename, "r");
+    if (!f) return 0;
     char line[MAX_LINE];
     int pc = 0;
 
     while (fgets(line, sizeof(line), f)) {
-        char* comment = strchr(line, '#');
+        char* comment = strchr(line, '#'); // [cite: 278]
         if (comment) *comment = '\0';
 
-        char* token = strtok(line, " \t\n,");
+        char* token = strtok(line, " \t\n\r,");
         if (!token) continue;
 
-        // Skip label if present
-        if (token[strlen(token) - 1] == ':') {
-            token = strtok(NULL, " \t\n,");
-            if (!token) continue;
+        // Strip label prefix safely if present
+        char* colon = strchr(token, ':');
+        if (colon != NULL) {
+            token = strtok(NULL, " \t\n\r,");
+            if (!token) continue; // Label on its own line: skip loop iteration safely!
         }
 
         // --- Handle Pseudo-Instructions ---
-        if (strcmp(token, ".word") == 0) {
-            int addr = resolve_val(strtok(NULL, " \t\n,"));
-            uint32_t data = (uint32_t)resolve_val(strtok(NULL, " \t\n,"));
-            memory[addr] = data;
-            if (addr >= max_pc_reached) max_pc_reached = addr + 1;
+        if (strcmp(token, ".word") == 0) { // [cite: 288]
+            int addr = resolve_val(strtok(NULL, " \t\n\r,"));
+            uint32_t data = (uint32_t)resolve_val(strtok(NULL, " \t\n\r,"));
+            if (addr >= 0 && addr < MAX_MEM) {
+                memory[addr] = data;
+                if (addr >= max_pc_reached) max_pc_reached = addr + 1;
+            }
+            continue;
+        }
+        
+        if (strcmp(token, ".array") == 0) { // [cite: 290]
+            int addr = resolve_val(strtok(NULL, " \t\n\r,"));
+            char* element = strtok(NULL, " \t\n\r,");
+            while (element != NULL) {
+                if (addr >= 0 && addr < MAX_MEM) {
+                    memory[addr] = (uint32_t)resolve_val(element);
+                    if (addr >= max_pc_reached) max_pc_reached = addr + 1;
+                    addr++;
+                }
+                element = strtok(NULL, " \t\n\r,");
+            }
             continue;
         }
 
@@ -156,13 +184,13 @@ void pass_two(const char* filename) {
         }
 
         if (opcode_val != -1) {
-            int rd = parse_reg(strtok(NULL, " \t\n,"));
-            int rs = parse_reg(strtok(NULL, " \t\n,"));
-            int rt = parse_reg(strtok(NULL, " \t\n,"));
-            int imm1_val = resolve_val(strtok(NULL, " \t\n,"));
-            int imm2_val = resolve_val(strtok(NULL, " \t\n,"));
+            int rd = parse_reg(strtok(NULL, " \t\n\r,"));
+            int rs = parse_reg(strtok(NULL, " \t\n\r,"));
+            int rt = parse_reg(strtok(NULL, " \t\n\r,"));
+            int imm1_val = resolve_val(strtok(NULL, " \t\n\r,"));
+            int imm2_val = resolve_val(strtok(NULL, " \t\n\r,"));
 
-            // Pack Row 1: [opcode 31:24] [rd 23:20] [rs 19:16] [rt 15:12] [imm12 11:0]
+            // Pack Row 1 [cite: 185]
             uint32_t row1 = 0;
             row1 |= (opcode_val & 0xFF) << 24;
             row1 |= (rd & 0x0F) << 20;
@@ -170,36 +198,43 @@ void pass_two(const char* filename) {
             row1 |= (rt & 0x0F) << 12;
             row1 |= (imm1_val & 0x0FFF);
 
-            memory[pc++] = row1;
+            if (pc < MAX_MEM) {
+                memory[pc++] = row1;
+            }
 
-            // Check if rs, rt, or rd was $imm2 to trigger Second Row
+            // Check if rs, rt, or rd was $imm2 to trigger Second Row [cite: 186]
             if (rd == 2 || rs == 2 || rt == 2) {
-                memory[pc++] = (uint32_t)imm2_val;
+                if (pc < MAX_MEM) {
+                    memory[pc++] = (uint32_t)imm2_val;
+                }
             }
             if (pc > max_pc_reached) max_pc_reached = pc;
         }
     }
     fclose(f);
+    return 1;
 }
 
 // --- Final Step: Write memin.txt ---
 void write_memin(const char* filename) {
     FILE* f = fopen(filename, "w");
-    // Write up to max_pc_reached or full memory per specs
+    if (!f) return;
     for (int i = 0; i < max_pc_reached; i++) {
-        fprintf(f, "%08X\n", memory[i]);
+        fprintf(f, "%08X\n", memory[i]); // [cite: 256]
     }
     fclose(f);
 }
 
 int main(int argc, char* argv[]) {
-    // Command line arguments for test: asm.exe program.asm memin.txt
     if (argc < 3) {
-        printf("Usage: asm.exe <input.asm> <output.txt>\n");
+        printf("Usage: asm.exe <input.asm> <output.txt>\n"); // [cite: 277]
         return 1;
     }
 
-    pass_one(argv[1]);
+    if (!pass_one(argv[1])) {
+        return 1; 
+    }
+    
     pass_two(argv[1]);
     write_memin(argv[2]);
 
