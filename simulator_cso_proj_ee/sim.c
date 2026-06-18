@@ -9,7 +9,7 @@
 #define DISK_SECTORS 128
 #define DISK_SECTOR_SIZE 128
 
-// Architectural Hardware State Variables
+// Architectural-Hardware State Variables
 int32_t R[NUM_REGS];       
 int32_t MEM[MEM_SIZE];     
 int32_t PC = 0;             
