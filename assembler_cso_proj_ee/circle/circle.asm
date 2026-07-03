@@ -15,8 +15,8 @@ LoopX:
     add $a1, $a1, $t2, 0, 0       # $a1 = (dy * 256) + dx (Total relative coordinate offset)
     add $a2, $s1, $a1, 0, 0       # $a2 = Center Address + relative offset
     out $a2, $zero, $imm1, 20, 0  # Write the target pixel offset to monitoraddr (Register 20)
-    out $imm1, $zero, $zero, 21, 255 # Write White color value (255) to monitordata (Register 21)
-    out $imm1, $zero, $zero, 22, 1   # Write Command Strobe (1) to monitorcmd (Register 22) to draw
+    out $imm2, $zero, $imm1, 21, 255 # Write White color value (255) to monitordata (Register 21)
+    out $imm2, $zero, $imm1, 22, 1   # Write Command Strobe (1) to monitorcmd (Register 22) to draw
 
 NextX:
     add $t2, $t2, $imm1, 1, 0     # dx = dx + 1

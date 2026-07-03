@@ -134,7 +134,7 @@ void load_irq2_inputs(const char *filename) {
     fclose(file);
 }
 
-// FIX: Unified tick function to call once per actual clock cycle
+// Unified tick function to call once per actual clock cycle
 void tick_peripherals(uint64_t current_cycle) {
     HW_R[8] = (int32_t)(current_cycle & 0xFFFFFFFF); // Update clock hardware register
 
