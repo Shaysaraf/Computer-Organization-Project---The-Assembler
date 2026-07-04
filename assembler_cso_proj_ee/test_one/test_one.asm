@@ -45,7 +45,7 @@ L_PIX:
 	bgt $imm1, $t1, $zero, L_PIX, 0		# loop 10 times
 
 	# ---------------------------------------------------------
-	# 4. Change 2 first disk sectors to 0xFEEDFEED
+	# 4. Change 2 first disk sectors to 0x12345678
 	# ---------------------------------------------------------
 	add $t0, $zero, $imm1, 1024, 0		# Buffer address
 	add $t1, $zero, $imm1, 128, 0		# 1 sector = 128 words
