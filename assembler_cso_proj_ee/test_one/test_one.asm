@@ -49,7 +49,7 @@ L_PIX:
 	# ---------------------------------------------------------
 	add $t0, $zero, $imm1, 1024, 0		# Buffer address
 	add $t1, $zero, $imm1, 128, 0		# 1 sector = 128 words
-	lw $t2, $zero, $imm1, 256, 0		# Load 0xFEEDFEED from address 256
+	lw $t2, $zero, $imm1, 256, 0		# Load 0x12345678 from address 256
 L_BUF:
 	sw $t2, $t0, $zero, 0, 0		# Write to buffer
 	add $t0, $t0, $imm1, 1, 0		# buffer_addr++
